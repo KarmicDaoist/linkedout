@@ -1,0 +1,5 @@
+{
+  "name": "LinkedOut Formatter",
+  "description": "A formatter to convert text into Unicode-styled fonts (Bold, Italic, Script, Monospace) for use on social media platforms like LinkedIn.",
+  "requestFramePermissions": []
+}
