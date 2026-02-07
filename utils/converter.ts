@@ -4,20 +4,20 @@ import React from 'react';
 export type TextStyle = 'bold' | 'italic' | 'boldSans' | 'italicSans' | 'script' | 'monospace' | 'doubleStruck' | 'strikethrough';
 
 export const convertText = (text: string, style: TextStyle): string => {
-  if (style === 'strikethrough') {
-    return text.split('').map(char => char + '\u0336').join('');
-  }
+    if (style === 'strikethrough') {
+        return text.split('').map(char => char + '\u0336').join('');
+    }
 
-  const map = MAPPINGS[style];
-  if (!map) return text;
+    const map = MAPPINGS[style];
+    if (!map) return text;
 
-  return text.split('').map(char => map[char] || char).join('');
+    return text.split('').map(char => map[char] || char).join('');
 };
 
 export const normalizeText = (text: string): string => {
-  let cleaned = text.replace(/[\u0300-\u036f]/g, ""); 
-  const chars = Array.from(cleaned);
-  return chars.map(char => INVERSE_MAP[char] || char).join('');
+    let cleaned = text.replace(/[\u0300-\u036f]/g, "");
+    const chars = Array.from(cleaned);
+    return chars.map(char => INVERSE_MAP[char] || char).join('');
 };
 
 // --- Paste Handling Logic ---
@@ -45,22 +45,31 @@ export const processPasteEvent = (e: React.ClipboardEvent<HTMLTextAreaElement>):
 };
 
 const convertMarkdownToUnicode = (text: string): string => {
-   let res = text;
-   
-   // Code: `text` -> Monospace
-   res = res.replace(/`([^`\n]+)`/g, (_, c) => convertText(c, 'monospace'));
-   
-   // Bold: **text** or __text__ -> Bold (Serif default)
-   res = res.replace(/(\*\*|__)(?=\S)(.+?)(?<=\S)\1/g, (_, __, c) => convertText(c, 'bold'));
-   
-   // Italic: *text* or _text_ -> Italic (Serif default)
-   // Using strict regex to avoid matching math (3*4) or snake_case
-   res = res.replace(/(\*|_)(?=\S)(.+?)(?<=\S)\1/g, (_, __, c) => convertText(c, 'italic'));
-   
-   // Strikethrough: ~~text~~ -> Strikethrough
-   res = res.replace(/~~(?=\S)(.+?)(?<=\S)~~/g, (_, c) => convertText(c, 'strikethrough'));
+    let res = text;
 
-   return res;
+    // Normalize AI outputs:
+    // 1. Remove "Copy code" artifacts
+    res = res.replace(/^Copy code\s*$/gm, '');
+
+    // 2. Code: `text` or ```text``` -> Monospace
+    // Handle multi-line code blocks first
+    res = res.replace(/```(?:[\w]*\n)?([\s\S]*?)```/g, (_, c) => convertText(c, 'monospace'));
+    res = res.replace(/`([^`\n]+)`/g, (_, c) => convertText(c, 'monospace'));
+
+    // Bold: **text** or __text__ -> Bold (Serif default)
+    // Relaxed regex to handle multi-word and potential newlines if needed
+    res = res.replace(/(\*\*|__)(.+?)\1/gs, (_, __, c) => convertText(c, 'bold'));
+
+    // Italic: *text* or _text_ -> Italic (Serif default)
+    res = res.replace(/(\*|_)(.+?)\1/gs, (_, __, c) => convertText(c, 'italic'));
+
+    // Strikethrough: ~~text~~ -> Strikethrough
+    res = res.replace(/~~(.+?)~~/gs, (_, c) => convertText(c, 'strikethrough'));
+
+    // LaTeX Math: \( ... \) -> Monospace (often used for formulas)
+    res = res.replace(/\\\((.+?)\\\)/gs, (_, c) => convertText(c, 'monospace'));
+
+    return res;
 };
 
 const convertHtmlToUnicode = (html: string): string => {
@@ -72,14 +81,14 @@ const convertHtmlToUnicode = (html: string): string => {
     const walk = (node: Node, styles: { bold?: boolean, italic?: boolean, strike?: boolean, mono?: boolean }) => {
         if (node.nodeType === Node.TEXT_NODE) {
             let content = node.textContent || '';
-            
+
             // Apply styles (Priority: Mono > Bold > Italic)
             if (styles.mono) content = convertText(content, 'monospace');
             else if (styles.bold) content = convertText(content, 'bold');
             else if (styles.italic) content = convertText(content, 'italic');
-            
+
             if (styles.strike) content = convertText(content, 'strikethrough');
-            
+
             output += content;
         } else if (node.nodeType === Node.ELEMENT_NODE) {
             const el = node as HTMLElement;
@@ -107,7 +116,7 @@ const convertHtmlToUnicode = (html: string): string => {
             }
 
             const isBlock = ['P', 'DIV', 'BR', 'LI', 'TR', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(tagName);
-            
+
             if (tagName === 'BR') {
                 output += '\n';
             }
@@ -121,7 +130,7 @@ const convertHtmlToUnicode = (html: string): string => {
     };
 
     walk(doc.body, {});
-    
+
     // Normalize newlines (max 2 consecutive) to prevent huge gaps from block tags
     return output.replace(/\n{3,}/g, '\n\n').trim();
 }
