@@ -111,7 +111,7 @@ const Editor: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-md sticky top-0 z-10">
+      <div className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-md sticky top-0 z-10 overflow-x-auto whitespace-nowrap scrollbar-hide">
         <div className="flex items-center gap-1 border-r border-slate-300 pr-2 mr-1">
           <Button
             onClick={() => handleApplyStyle('bold')}
@@ -177,9 +177,13 @@ const Editor: React.FC = () => {
       <div className="relative">
         <textarea
           ref={textareaRef}
-          className="w-full min-h-[200px] p-4 text-lg text-slate-800 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0a66c2] focus:border-transparent outline-none resize-none transition-shadow"
+          className="w-full min-h-[40vh] sm:min-h-[200px] p-4 text-base sm:text-lg text-slate-800 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0a66c2] focus:border-transparent outline-none resize-none transition-shadow leading-relaxed"
           placeholder="Type here, or paste from ChatGPT / Google Docs..."
           value={text}
+          autoCapitalize="sentences"
+          autoCorrect="on"
+          spellCheck
+          enterKeyHint="done"
           onChange={(e) => {
             const newValue = e.target.value;
             const diff = newValue.length - text.length;
@@ -199,14 +203,15 @@ const Editor: React.FC = () => {
       </div>
 
       {/* Action Bar */}
-      <div className="flex justify-between items-center pt-2">
-        <div className="text-sm text-slate-500">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2 pb-[env(safe-area-inset-bottom)] sm:pb-0 bg-white sm:bg-transparent border-t sm:border-t-0 fixed bottom-0 left-0 right-0 sm:static px-4 sm:px-0">
+        <div className="text-sm text-slate-500 order-2 sm:order-1">
           {text.length} characters
         </div>
         <Button
           onClick={handleCopy}
-          label={copied ? "Copied!" : "Copy for LinkedIn"}
+          label={copied ? "Copied!" : "Copy"}
           variant="primary"
+          className="order-1 sm:order-2 w-full sm:w-auto"
           icon={copied ? (
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 mr-2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
